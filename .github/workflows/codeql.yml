@@ -2,9 +2,7 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
   workflow_dispatch:
 
 jobs:
@@ -20,14 +18,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison flex libssl-dev libgnutls28-dev
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: cpp
         queries: ./.github/codeql/custom_taint_tracking.ql
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Configure and Build U-Boot
+      run: |
+        make sandbox_defconfig
+        make -j$(nproc)
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
