@@ -8,7 +8,7 @@ on:
 jobs:
   analyze:
     name: Analyze C/C++
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       actions: read
       contents: read
@@ -21,7 +21,8 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc bison flex libssl-dev libgnutls28-dev
+        sudo apt-get install -y bc bison flex libssl-dev libgnutls28-dev libsdl2-dev gcc-11
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
@@ -32,9 +33,11 @@ jobs:
     - name: Configure and Build U-Boot
       run: |
         make sandbox_defconfig
-        make -j$(nproc)
+        # Compila con -k per consentire a CodeQL di estrarre l'AST di tutti i file di rete anche se il linking finale fallisce
+        make -k -j$(nproc) KCFLAGS="-Wno-error" || true
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:cpp"
+        upload: true
